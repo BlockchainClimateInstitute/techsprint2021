@@ -1,0 +1,541 @@
+
+<!DOCTYPE html>
+
+<style>
+  th {
+    border-left: 2px solid red;
+    border-top: 2px solid red;
+    border-right: 2px solid red;
+    border-bottom: 2px solid red;
+  }
+
+  td {
+    border-left: 1px solid lightgray;
+    border-top: 1px solid lightgray;
+    border-right: 1px solid lightgray;
+    border-bottom: 1px solid lightgray;
+    text-align: center;
+  }
+
+  .Bold {
+    font-weight: bold;
+  }
+</style>
+
+<html>
+
+<head>
+  <title>BCI UseCase001 v20210823</title>
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+  <!-- leafletJS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+    crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+    integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+    crossorigin=""></script>
+
+  <!-- jQuery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+  <!-- chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- <script>
+    var myChart = new Chart(ctx, { ...});
+  </script> -->
+
+</head>
+
+<body>
+  Postcode
+  <input id="postcodeInput" type="search" />
+  <p></p>
+  <div id="mapid" style="width: 1250px; height: 630px"></div>
+
+
+  <script>
+
+    var initialZoom = true
+
+    // var mymap = L.map('mapid').setView([51.505, -0.09], 13)
+    var mymap = L.map('mapid').setView([54.616923, -4.423651], 6)
+    var polygon = ''
+    var marker = ''
+    var currentPC = ''
+    var addressList = []
+    var lat = 0
+    var long = 0
+    var buildingID = 'Unknown'
+    var buildingPRICE = 'Unknown'
+
+    // CHARTING - START
+    const labels = [
+      '2020',
+      '2025',
+      '2030',
+      '2035',
+      '2040',
+      '2045',
+      '2050',
+    ];
+    var data = {
+      labels: labels,
+      position: 'bottom',
+      datasets: [{
+        label: '1.5c',
+        backgroundColor: 'blue',
+        borderColor: 'blue',
+        data: [],
+      },
+      {
+        label: '2.0c',
+        backgroundColor: 'red',
+        borderColor: 'red',
+        data: [],
+      }]
+    }
+    var chartConfig = {
+      type: 'line',
+      data: data,
+      options: {
+        plugins: {
+          legend: {
+            labels: {
+              useLineStyle: false,
+              boxHeight: 0.5
+            },
+            title: {
+              display: false,
+              text: 'Forecast',
+            },
+            position: 'bottom',
+          }
+        }
+      }
+    }
+
+    var myChart = ''
+
+    // CHARTING - END
+
+    // The MAP
+    L.tileLayer(
+      'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
+      {
+        maxZoom: 18,
+        attribution:
+          'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, ' +
+          'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        id: 'mapbox/streets-v11',
+        tileSize: 512,
+        zoomOffset: -1,
+      }
+    ).addTo(mymap)
+
+    mymap.on('zoomend', function (ev) {
+      // alert(ev.latlng) // ev is an event object (MouseEvent in this case)
+      if (initialZoom) {
+
+        if (currentPC !== '') {
+          if (polygon !== '') {
+            polygon.addTo(mymap)
+          }
+          marker.addTo(mymap).openPopup()
+          $('#buildingID').text(buildingID)
+          $('#buildingPRICE').text(buildingPRICE)
+
+          $(function () {
+            $('#selectaddress').on('change', function (event) {
+              buildingID = 'Unknown'
+              var selected = Number(this.value) - 1
+              buildingID = addressList[selected].buildingId
+              // alert(selected + ' = ' + buildingID)
+              $('#buildingID').text(buildingID)
+
+              if (buildingID !== 'Unknown') {
+                console.log('getBuildingDetails - address change')
+                getBuildingDetails(buildingID)
+              }
+            })
+          })
+          initialZoom = false
+        }
+        // initialise as first
+        buildingID = addressList[0].buildingId
+        $('#buildingID').text(buildingID)
+        if (buildingID) {
+          // console.log('getBuildingDetails - addressListPOPUP')
+          getBuildingDetails(buildingID)
+        }
+      }
+    })
+
+    // POPUP
+    //   L.marker([51.5, -0.09])
+    //     .addTo(mymap)
+    //     .bindPopup('<b>Hello BCI!</b><br />I am a popup - In London.')
+    //     .openPopup()
+
+    // CIRCLE of radius
+    //   L.circle([50.616923, -3.423651], 500, {
+    //     color: 'red',
+    //     fillColor: '#f03',
+    //     fillOpacity: 0.5,
+    //   })
+    //     .addTo(mymap)
+    //     .bindPopup('I am a circle.')
+
+    // POLYGON
+    //   L.polygon([
+    //     [51.509, -0.08],
+    //     [51.503, -0.06],
+    //     [51.51, -0.047],
+    //   ])
+    //     .addTo(mymap)
+    //     .bindPopup('I am a polygon.')
+
+    // POLYGON----------------> START
+    function drawPolygon(label, color) {
+      // POLYGON 2 - Add to map
+      polygon = L.polygon(Epolygon(label), { color: color })
+      // var polygon = L.polygon(Epolygon(), { color: 'red' }).addTo(mymap)
+      // POLYGON 3 - Zoom the map to the polygon
+      mymap.flyToBounds(polygon.getBounds(), { duration: 1 })
+      // mymap.fitBounds(polygon.getBounds())
+    }
+    // POLYGON----------------> END
+
+    // WINDOW RIZE ----------------> START
+    $(window).resize(function () {
+      resizeMap()
+    });
+    // WINDOW RIZE ----------------> END
+
+    // RIZE MAP ----------------> START
+    function resizeMap() {
+      // console.log(window.screen.width + ":" + window.screen.height + " " + window.innerWidth + ":" + window.innerHeight)
+      document.getElementById("mapid").style.width = (window.innerWidth - 30) + "px";
+      document.getElementById("mapid").style.height = (window.innerHeight - 70) + "px";
+      mymap.invalidateSize(true)
+      // L.map('mapid').setView([54.616923, -4.423651], 6)
+      mymap.setView([54.616923, -4.423651], 6)
+    }
+    // RIZE MAP ----------------> END
+
+    var popup = L.popup()
+    var limit = 10 //your input limit
+    $(document).on('ready', function () {
+
+      // size map window
+      resizeMap()
+
+      // focus on postcode
+      $('#postcodeInput').focus()
+
+      var oldValue = $("input[type='text']").val()
+      $('#postcodeInput').on('keydown', function (e) {
+        oldValue = $(this).val()
+      })
+      $('#postcodeInput').on('input propertychange', function (e) {
+        newValue = $(this).val()
+        currentPC = newValue
+
+        // alert(oldValue + ',' + newValue)
+
+        //   if (newValue.slice(-1) !== ' ') {
+        //   alert(
+        //     oldValue +
+        //       ',' +
+        //       newValue +
+        //       ' ' +
+        //       oldValue.length +
+        //       ' ' +
+        //       newValue.length
+        //   )
+
+        // PC assume anything less than 6 is invalid
+        // Initialise
+        if (newValue.length === 0) {
+          document.getElementById("postcodeInput").style.color = "";
+          initialZoom = true
+        }
+        if (newValue.length > 0 && newValue.length < 6) {
+          initialZoom = true
+          document.getElementById("postcodeInput").style.color = "red";
+        }
+        if (polygon && newValue.slice(-1) !== ' ' && newValue.length < 6) {
+          mymap.removeLayer(polygon)
+        }
+        if (marker && currentPC.length < 7) {
+          mymap.removeLayer(marker)
+        }
+        if (newValue === '') {
+          if (polygon !== '') {
+            mymap.removeLayer(polygon)
+          }
+          // ENGLAND
+          mymap.flyTo([54.616923, -4.423651], 6, { duration: 1 })
+          initialZoom = true
+        }
+
+        if (currentPC.length > 5) {
+          var myKeyVals = { unit_request: { version: "0.0.1", unitList: [currentPC] } }
+          console.log("START data ", JSON.stringify(myKeyVals));
+          // console.log('myKeyVals', myKeyVals)
+          // alert('myKeyVals : ' + currentPC);
+
+          const response = new XMLHttpRequest();
+          response.open("POST", "http://141.125.109.201:5000/address_service/");
+          response.setRequestHeader('Content-Type', 'application/json');
+          response.send(JSON.stringify(myKeyVals));
+
+          response.onreadystatechange = function () {
+            if (this.readyState === 4) {
+              // Do something
+              // alert('ERROR in address_service : ' + this.status + ' = ' + this.statusText);
+            }
+          }
+          response.onload = (e) => {
+            if (response.status !== 201) {
+              // Do something
+              alert('ERROR in address_service for ' + currentPC + ': ' + response.status + ' = ' + response.statusText);
+            } else {
+
+              // alert('Response : ' + response.response);
+              var returnedData = JSON.parse(response.response)
+              // console.log(response.response)
+              if (returnedData.success) {
+                var arrayZero = returnedData.unitList[0]
+                var unit = arrayZero.unit
+                var location = arrayZero.location
+                var comment = arrayZero.comment
+
+                if ((comment !== '') && (comment.substring(0, 5) === 'Error')) {
+                  document.getElementById("postcodeInput").style.color = "red";
+                } else {
+                  document.getElementById("postcodeInput").style.color = "green";
+                  lat = location.latitude
+                  // lat = lat.replace('(', '');
+                  // lat = lat.replace(')', '');
+                  // lat = lat.replace(/,/g, '');
+                  // lat = lat.replace(/'/g, '');
+                  // lat = Number(lat);
+
+                  long = location.longitude
+                  // long = long.replace('(', '');
+                  // long = long.replace(')', '');
+                  // long = long.replace(/,/g, '');
+                  // long = long.replace(/'/g, '');
+                  // long = Number(long);
+
+                  addressList = arrayZero.addressList
+                  // FLY to Postcode
+                  mymap.flyTo([long, lat], 16, { duration: 1 })
+                  // CREATE and OPEN POPUP
+                  addressListPOPUP()
+                }
+              } else {
+                // alert('The postcode ' + currentPC + ' does not exist');
+                // currentPC = ''
+                // document.getElementById('postcodeInput').value = ''
+                document.getElementById("postcodeInput").style.color = "red";
+              }
+            }
+          }
+        }
+      })
+    })
+
+    // getBuildingDetails ----------------> START
+    function getBuildingDetails(buildingID) {
+      var myKeyVals = { risk_request: { version: "0.0.1", buildingList: [buildingID] } }
+      console.log("START data ", JSON.stringify(myKeyVals));
+      // console.log('myKeyVals', myKeyVals)
+
+      data.datasets[0].data = []
+      data.datasets[1].data = []
+
+      const response = new XMLHttpRequest();
+      response.open("POST", "http://141.125.109.201:5000/risk_service/");
+      response.setRequestHeader('Content-Type', 'application/json');
+      response.send(JSON.stringify(myKeyVals));
+
+      response.onreadystatechange = function () {
+        if (this.readyState === 4) {
+          // Do something
+          // alert('ERROR in risk_service : ' + this.status + ' = ' + this.statusText);
+        }
+      }
+      response.onload = (e) => {
+        if (response.status !== 201) {
+          // Do something
+          alert('ERROR in risk_service : ' + response.status + ' = ' + response.statusText);
+        } else {
+
+          // alert('Response : ' + response.response);
+          var returnedData = JSON.parse(response.response)
+          // console.log(response.response)
+          if (returnedData.success) {
+            var buildingList = returnedData.buildingList
+            var zero = buildingList[0]
+            var climateRisk = zero.climateRisk
+
+            // building details
+            buildingPRICE = zero.price
+            $('#buildingPRICE').text(buildingPRICE)
+            console.log('getBuildingDetails : ' + buildingID + ":" + buildingPRICE)
+
+            /*
+            // climate table - OLD WAY
+            var climateTable = ''
+            for (let index = 2020; index < 2051; index = index + 5) {
+              // console.log(index)
+              var CRname15 = 'VAR_' + index + '_15'
+              var CRname20 = 'VAR_' + index + '_20'
+              var risk15 = climateRisk.find(x => x.name === CRname15)
+              var risk20 = climateRisk.find(x => x.name === CRname20)
+              // console.log(CRname15 + ' = ' + Math.round(risk15.value * buildingPRICE))
+              // console.log(CRname20 + ' = ' + Math.round(risk20.value * buildingPRICE))
+              climateTable = climateTable + '<tr><td>' + index +
+                '<td>' + Math.round(risk15.value * buildingPRICE) +
+                '<td>' + Math.round(risk20.value * buildingPRICE) + '</tr>'
+            }
+            $('#climateRiskTABLEbody').html(climateTable)
+            */
+            // climate table - OLD WAY
+            var data15 = []
+            var data20 = []
+            for (let index = 2020; index < 2051; index = index + 5) {
+              // console.log(index)
+              var CRname15 = 'VAR_' + index + '_15'
+              var CRname20 = 'VAR_' + index + '_20'
+              var risk15 = climateRisk.find(x => x.name === CRname15)
+              var risk20 = climateRisk.find(x => x.name === CRname20)
+              data15.push(Math.round(risk15.value * buildingPRICE))
+              data20.push(Math.round(risk20.value * buildingPRICE))
+              console.log(CRname15 + ' = ' + Math.round(risk15.value * buildingPRICE))
+              console.log(CRname20 + ' = ' + Math.round(risk20.value * buildingPRICE))
+            }
+            data.datasets[0].data = data15
+            data.datasets[1].data = data20
+            if (myChart) {
+              myChart.destroy()
+            }
+            myChart = new Chart(document.getElementById('myChart'), chartConfig);
+            // myChart.options.plugins.legend.position = 'top';
+
+          } else {
+            document.getElementById("postcodeInput").style.color = "blue";
+          }
+        }
+      }
+    }
+    // getBuildingDetails ----------------> END
+
+    // TEXT BOX ----------------> START
+    function addressListPOPUP() {
+
+      // (DEBUG)
+      // console.log('addressListPOPUP')
+
+      // THIS is how to draw the Postcode Polygon
+      // drawPolygon('EX8 1', 'green')
+      var popupForm = '<div>' + '<b align="center">BCI CCREM Postcode = ' + currentPC + '</b>' +
+        // '<p />' +
+        '<form> ' + '<select name="selectaddress" id="selectaddress">'
+      addressList.forEach(function (item, index) {
+        // console.log(item, index);
+        // popupForm = popupForm + '<option value="' + (index + 1) + '">' + item.address1 + ', ' + item.address2 + ', ' + item.address3 + '</option>'
+        // (NOTE) address2 and address3 look redundant
+        popupForm = popupForm + '<option value="' + (index + 1) + '">' + item.address1 + '</option>'
+      });
+
+      popupForm = popupForm + '</select>' +
+        // '<input type="text" name="text1" id="text1">' +
+        '</form>' +
+        // '<br />' +
+        '<table><tr bgcolor=lightgray>' +
+        '<tr>' +
+        '<td class="Bold" bgcolor="lightgreen">Building ID</td>' +
+        '<td id="buildingID">' + buildingID + '</td>' +
+        '<td class="Bold" bgcolor="lightgreen">Price £</td>' +
+        '<td id="buildingPRICE">' + buildingPRICE + '</td>' +
+        '</tr>' +
+        '</table>' +
+
+        /* OLD TABLE WAY
+        '<table id="climateRiskTABLE"><tr bgcolor=lightgray>' +
+        '<thead><tr>' +
+        '<th>Year</th>' +
+        '<th>£ Value@Risk 1.5c</th>' +
+        '<th>£ Value@Risk 2.0c</th>' +
+        '</tr></thead>' +
+        '<tbody id="climateRiskTABLEbody"></tbody>' +
+        '</table>'
+        */
+
+        // NEW GRAPH WAY
+        '<div style="width: 300px;">' +
+        '<canvas id="myChart"></canvas>' +
+        '</div>'
+
+      // END DIV
+      popupForm = popupForm + '</div>'
+
+      /* Maybe this is the way to do ENERGY RATINGs ?
+    '<tr>' +
+    '<td bgcolor="red" align="center">A</td>' +
+    '<td bgcolor="white"  align="right">3333</td>' +
+    '<td bgcolor="white"  align="right">81.2</td>' +
+    '</tr>' +
+    '<tr>' +
+    '<td bgcolor="Orange" align="center">B</td>' +
+    '<td bgcolor="white"  align="right">2122</td>' +
+    '<td bgcolor="white"  align="right">98.2</td>' +
+    '</tr>' +
+    '<tr>' +
+    '<td bgcolor="Green" align="center">C</td>' +
+    '<td bgcolor="white"  align="right">4432</td>' +
+    '<td bgcolor="white"  align="right">32.1</td>' +
+    '</tr>' +
+    */
+
+      /*
+        var popup = L.popup({
+          offset: [0, -30]
+        })
+          .setLatLng(location)
+          .setContent("Test Text")
+          .openOn(mapId);
+  */
+
+      // POPUP
+      marker = L.marker([long, lat]).bindPopup(popupForm)
+      marker.addTo(mymap).openPopup()
+
+      // // initialise as first
+      // buildingID = addressList[0].buildingId
+      // if (buildingID) {
+      //   console.log('getBuildingDetails - addressListPOPUP')
+      //   getBuildingDetails(buildingID)
+      // }
+
+      //   alert('String = ' + newValue)
+
+      //   if (newValue.length > limit) {
+      //     $(this).val(oldValue)
+      //     alert('String too long.')
+      //   }
+    }
+    // TEXT BOX ----------------> END
+
+  </script>
+</body>
+
+</html>
