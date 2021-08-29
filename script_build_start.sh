@@ -8,4 +8,4 @@ docker build --tag techsprint2021_image:latest .
 
 # Run image
 # docker run -d --name techsprint2021 -p 5000:5000 --rm -v /"$PWD":/$HOME/app/ -w /$HOME/app/ techsprint2021_image:latest
-docker run -d --name techsprint2021 -p 5000:5000 techsprint2021_image:latest
+docker run -d --name techsprint2021 -p 80:80 techsprint2021_image:latest
