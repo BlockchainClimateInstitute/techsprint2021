@@ -1,10 +1,7 @@
-# syntax=docker/dockerfile:1
-FROM python:3.7-slim-buster
-#FROM tiangolo/uwsgi-nginx-flask:python3.8
+#FROM python:3.7-slim-buster
+FROM tiangolo/uwsgi-nginx-flask:python3.8
 
-# WORKDIR /app
-#
-# # RUN apt-get install build-essential python3-dev
+# Installing key dependencies
 RUN apt-get update \
     && apt-get --yes --no-install-recommends install \
         python3-dev \
@@ -23,9 +20,7 @@ ENV LISTEN_PORT 5000
 
 EXPOSE 5000
 
-#COPY ./app /app
-
-COPY . .
+COPY ./app /app
 
 CMD [ "python", "app/main.py" ]
 
