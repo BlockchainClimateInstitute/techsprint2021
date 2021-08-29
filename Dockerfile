@@ -22,7 +22,7 @@ EXPOSE 5000
 
 COPY ./app /app
 
-#CMD [ "python", "app/main.py" ]
+CMD [ "python", "app/main.py" ]
 
 
 #CMD ["python3", "-m", "main", "--host=0.0.0.0", "--port=5000"]
