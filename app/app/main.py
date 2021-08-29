@@ -9,13 +9,10 @@ from flask import Blueprint, render_template, abort
 from admin.views import admin
 
 
-#app = Flask(__name__)
-#CORS(app)
 api_v1 = Blueprint("api", __name__, url_prefix="/swagger_docs")
 
 
-api = Api(api_v1, version='0.0.1', title='TCFD Risks API', #doc='/swagger_docs', #url_scheme='https',
-#api = Api(app, version='0.0.1', title='TCFD Risks API', #doc='/swagger_docs', #url_scheme='https',
+api = Api(api_v1, version='0.0.1', title='TCFD Risks API', #url_scheme='https',
           licence= "MIT", description='MicroService for location mapping')
 
 # User for only read access to DB (only these tables)
