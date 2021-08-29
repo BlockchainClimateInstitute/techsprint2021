@@ -4,11 +4,10 @@ from flask_restx import Api, Resource, fields
 from sqlalchemy import create_engine
 from sqlalchemy import MetaData, Table
 from sqlalchemy.orm import sessionmaker
-
-from flask import url_for
 from flask import Blueprint, render_template, abort
 
 from admin.views import admin
+
 
 #app = Flask(__name__)
 #CORS(app)
@@ -19,18 +18,20 @@ api = Api(api_v1, version='0.0.1', title='TCFD Risks API', #doc='/swagger_docs',
 #api = Api(app, version='0.0.1', title='TCFD Risks API', #doc='/swagger_docs', #url_scheme='https',
           licence= "MIT", description='MicroService for location mapping')
 
-# load database
-# username: bci_member password:Bcidatabase2020
+# User for only read access to DB (only these tables)
+# CREATE USER techsprint WITH PASSWORD 'techsprintPa55w0rd';
+# GRANT CONNECT ON DATABASE postgres TO techsprint;
+# GRANT USAGE ON SCHEMA public TO techsprint;
+# GRANT SELECT ON epcaddresses TO techsprint;
+# GRANT SELECT ON epcvar TO techsprint;
 engine = create_engine(
-    'postgresql+psycopg2://postgres:Bcidatabase2020@golden-source-2020.cyozpdhauzu4.us-east-2.rds.amazonaws.com:5432/postgres')
+    'postgresql+psycopg2://techsprint:techsprintPa55w0rd@golden-source-2020.cyozpdhauzu4.us-east-2.rds.amazonaws.com:5432/postgres')
 connection = engine.connect()
 metadata = MetaData()
 address_df = Table('epcaddresses', metadata, autoload=True, autoload_with=engine)
 risk_df = Table('epcvar', metadata, autoload=True, autoload_with=engine)
-# address_df = Table('epcaddresses', metadata, autoload=True, autoload_with=engine)
-# risk_df = Table('epccrrem', metadata, autoload=True, autoload_with=engine)
 
-# addresslist service
+
 Session = sessionmaker(bind=engine)
 s1 = Session()
 
@@ -91,10 +92,7 @@ risk_request = api.model(
 )
 
 # Example Json to send in Swagger Request
-# Hi Susanta, for now use this schema for request:
 # {"risk_request": { "version": "0.0.1", "buildingList": ["1900962178"]}}
-# We will work on this request later (after this weekend)
-# {"risk_request": { "version": "0.0.1", "buildingList": ["7650962178", "8500215668"], "riskContext": {"2C" ,"4.5","245","2050",0.02}}}
 riskColumn = api.model(
     "riskColumn", {
         "name": fields.String(required=True, description="Risk Column Name for the Real Estate Asset"),
@@ -155,20 +153,9 @@ ns1 = api.namespace('address_service', description='Address Listing operations')
 ns2 = api.namespace('risk_service', description='Risk Listing operations')
 
 
-# @simple_page.route('/', defaults={'page': 'index'})
-# #@simple_page.route('/<page>')
-# def show(page):
-#     return url_for('api.index.html')
-#     # try:
-#     #     return url_for('api.index')
-#     #     #return render_template(f'pages/{page}.html')
-#     # except TemplateNotFound:
-#     #     abort(404)
-
-
 @ns1.route('/')
 class unit(Resource):
-    '''Show a single todo item and lets you delete them'''
+    '''TODO'''
 
     @api.doc(parser=parser_unit_request)
     @api.expect(unit_request, validate=True)
