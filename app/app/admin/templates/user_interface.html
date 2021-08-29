@@ -318,7 +318,7 @@
           // alert('myKeyVals : ' + currentPC);
 
           const response = new XMLHttpRequest();
-          response.open("POST", "http://141.125.109.201:80/address_service/");
+          response.open("POST", "http://141.125.109.201/swagger_docs/address_service/");
           response.setRequestHeader('Content-Type', 'application/json');
           response.send(JSON.stringify(myKeyVals));
 
@@ -415,7 +415,7 @@
       data.datasets[1].data = []
 
       const response = new XMLHttpRequest();
-      response.open("POST", "http://141.125.109.201:80/risk_service/");
+      response.open("POST", "http://141.125.109.201/swagger_docs/risk_service/");
       response.setRequestHeader('Content-Type', 'application/json');
       response.send(JSON.stringify(myKeyVals));
 
