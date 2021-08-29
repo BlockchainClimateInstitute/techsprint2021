@@ -19,4 +19,4 @@ Using docker and nginx, uwsgi, etc. All ready for full deployment in IBM server:
 source script_build_start.sh
 ```
 
-Go to  http://localhost:5000/ and from here you should be able to test the app. 
+Go to  http://localhost/ and from here you should be able to test the app. 
