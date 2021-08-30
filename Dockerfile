@@ -1,5 +1,5 @@
-#FROM python:3.7-slim-buster
-FROM tiangolo/uwsgi-nginx-flask:python3.8
+FROM python:3.7-slim-buster
+#FROM tiangolo/uwsgi-nginx-flask:python3.8
 
 # Installing key dependencies
 RUN apt-get update \
@@ -16,18 +16,17 @@ COPY requirements.txt requirements.txt
 
 RUN pip3 install -r requirements.txt
 
-#ENV LISTEN_PORT 5000
+ENV LISTEN_PORT 5000
 
-#EXPOSE 5000
+EXPOSE 5000
 
 COPY ./app /app
 
-CMD [ "python", "app/main.py" ]
-
-
-#CMD ["python3", "-m", "main", "--host=0.0.0.0", "--port=5000"]
+CMD [ "python", "app/app/main.py" ]
+#CMD ["uwsgi", "app/wsgi.ini"]
 
 #COPY . .  /This had problems
-
+#CMD ["python3", "-m", "main", "--host=0.0.0.0", "--port=5000"]
 #CMD ["python3", "-m" , "flask", "run", "--host=0.0.0.0", "--port=5000"]
 #CMD ["uwsgi", "wsgi.ini"]
+#CMD [ "python", "app/main.py" ]

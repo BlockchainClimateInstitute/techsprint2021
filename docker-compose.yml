@@ -1,0 +1,26 @@
+version: "3.7"
+
+services:
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
+  tcfd_rest_api:
+    build: .
+    image: techsprint2021_image
+    container_name: tcfd_rest_api
+    links:
+      - caddy
+    volumes:
+      - .:/code
+
+volumes:
+  caddy_data:
+  caddy_config:

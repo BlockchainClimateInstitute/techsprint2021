@@ -4,15 +4,23 @@ from flask_restx import Api, Resource, fields
 from sqlalchemy import create_engine
 from sqlalchemy import MetaData, Table
 from sqlalchemy.orm import sessionmaker
-from flask import Blueprint, render_template, abort
+from flask import Blueprint, render_template, abort, url_for
 
 from admin.views import admin
 
 
+# https://stackoverflow.com/questions/47508257/serving-flask-restplus-on-https-server
+# class MyApi(Api):
+#     @property
+#     def specs_url(self):
+#         """Monkey patch for HTTPS"""
+#         scheme = 'http' if '5001' in self.base_url else 'https'
+#         return url_for(self.endpoint('specs'), _external=True, _scheme=scheme)
+
 api_v1 = Blueprint("api", __name__, url_prefix="/swagger_docs")
 
 
-api = Api(api_v1, version='0.0.1', title='TCFD Risks API', #url_scheme='https',
+api = Api(api_v1, version='0.0.1', title='TCFD Risks API', url_scheme='https',
           licence= "MIT", description='MicroService for location mapping')
 
 # User for only read access to DB (only these tables)
@@ -431,5 +439,5 @@ if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
         debug=True,
-        port='80'
+        port='5000'
     )
