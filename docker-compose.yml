@@ -11,6 +11,9 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
+      - web-root:/var/www/html
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
 
   tcfd_rest_api:
     build: .
@@ -21,6 +24,28 @@ services:
     volumes:
       - .:/code
 
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - web-root:/var/www/html
+    depends_on:
+      - caddy
+    command: certonly --webroot --webroot-path=/var/www/html --email pedro.baiz@blockchainclimate.org --agree-tos --no-eff-email --staging -d techsprint2021.blockchainclimate.org  -d www.techsprint2021.blockchainclimate.org
+
 volumes:
   caddy_data:
+    external: true
   caddy_config:
+  certbot-etc:
+  certbot-var:
+  web-root:
+    driver: local
+    driver_opts:
+      type: none
+      device: /root/certs/
+      o: bind
+
+# https://www.digitalocean.com/community/tutorials/how-to-secure-a-containerized-node-js-application-with-nginx-let-s-encrypt-and-docker-compose
