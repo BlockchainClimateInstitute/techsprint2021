@@ -43,6 +43,7 @@ unit_request = api.model(
 )
 # Example Json to send in Swagger Request
 # {"unit_request": { "version": "0.0.1", "unitList": ["SW128PW", "E105QD"]}}
+# {"risk_request": { "version": "0.0.1", "buildingList": ["1900962178"]}}
 addressList = api.model(
     "addressList", {
         "buildingId": fields.String(required=True, description="Buildingid."),
