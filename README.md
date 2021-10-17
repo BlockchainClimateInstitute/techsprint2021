@@ -20,3 +20,9 @@ source script_build_start.sh
 ```
 
 Go to  http://localhost/ and from here you should be able to test the app. 
+
+
+Useful links
+------------
+
+- https://www.cloudsavvyit.com/25/what-is-ssh-agent-forwarding-and-how-do-you-use-it/
